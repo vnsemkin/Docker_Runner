@@ -1,0 +1,60 @@
+version: '3.8'
+name: gpb
+services:
+  telegram-bot:
+    container_name: telegram-bot
+    image: normat/telegram-bot:latest
+    env_file:
+      - telegram-bot.env
+    restart: no
+    ports:
+      - "8081:8081"
+    networks:
+      gpb:
+        aliases:
+          - telegram-bot
+
+  middle-service:
+    container_name: middle-service
+    image: normat/middle-service:latest
+    env_file:
+      - middle-service.env
+    depends_on:
+      - gpb-postgres
+    restart: no
+    ports:
+      - "8082:8082"
+    networks:
+      gpb:
+        aliases:
+          - middle-service
+  fake-backend:
+    container_name: fake-backend
+    image: normat/fake-backend
+    restart: no
+    ports:
+      - "8080:8080"
+    networks:
+      gpb:
+        aliases:
+          - fake-backend
+  gpb-postgres:
+    container_name: postgres
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    env_file:
+      - postgres-secrets.env
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      gpb:
+        aliases:
+          - gpb-postgres
+volumes:
+  postgres_data:
+    driver: local
+networks:
+  gpb:
+    driver: bridge
